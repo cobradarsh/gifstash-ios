@@ -161,8 +161,9 @@ static NSString *GSHash(NSString *text) {
             : [@"d-" stringByAppendingString:GSHash(media.videoURL.absoluteString)];
         NSURL *videoURL = [store videoURLForID:itemID];
         NSURL *gifURL = [store gifURLForID:itemID];
-        NSURL *partVideo = [videoURL URLByAppendingPathExtension:@"part"];
-        NSURL *partGIF = [gifURL URLByAppendingPathExtension:@"part"];
+        // The working copies keep their endings: the system tells a video by its file name.
+        NSURL *partVideo = [store.rootURL URLByAppendingPathComponent:[itemID stringByAppendingString:@".part.mp4"]];
+        NSURL *partGIF = [store.rootURL URLByAppendingPathComponent:[itemID stringByAppendingString:@".part.gif"]];
         NSFileManager *files = NSFileManager.defaultManager;
 
         NSString *downloading = [NSString stringWithFormat:@"Downloading%@…", suffix];

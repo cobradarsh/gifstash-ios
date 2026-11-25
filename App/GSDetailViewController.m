@@ -224,7 +224,7 @@ static UIButton *GSSmallButton(NSString *title, NSString *symbol) {
     GSStore *store = GSStore.shared;
     dispatch_async(dispatch_get_global_queue(QOS_CLASS_USER_INITIATED, 0), ^{
         NSURL *gif = [store gifURLForID:item.itemID];
-        NSURL *part = [gif URLByAppendingPathExtension:@"part"];
+        NSURL *part = [store.rootURL URLByAppendingPathComponent:[item.itemID stringByAppendingString:@".part.gif"]];
         NSError *error = nil;
         GSGifResult *result = [GSGifMaker makeGIFAtURL:part fromVideo:[store videoURLForID:item.itemID] preset:(GSGifPreset)preset
                                              posterURL:nil progress:nil error:&error];
