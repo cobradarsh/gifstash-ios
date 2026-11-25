@@ -28,9 +28,9 @@ moved more than a few levels are drawn again; the rest is written as see-through
 
 | Quality  | Long side | Frames a second | Notes |
 |----------|-----------|-----------------|-------|
-| Small    | 320 px    | 12              | |
-| Balanced | 480 px    | 16              | the default |
-| High     | 640 px    | 20              | smoothed gradients (error diffusion) |
+| Small    | 320 px    | up to 12        | |
+| Balanced | 480 px    | up to 16        | the default; every second frame of a 24 to 30 fps video |
+| High     | 640 px    | up to 30        | every frame, smoothed gradients (error diffusion) |
 
 A GIF covers at most the first 20 seconds of a video, and one that comes out above 20 MB is made again one
 quality lower.

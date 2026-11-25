@@ -13,7 +13,7 @@ typedef struct { int maxSide; double interval; int tolerance; int dither; } GSPr
 static GSPresetValues GSValues(GSGifPreset preset) {
     switch (preset) {
         case GSGifPresetSmall: return (GSPresetValues){ 320, 0.08, 10, 0 };
-        case GSGifPresetHigh: return (GSPresetValues){ 640, 0.05, 5, 1 };
+        case GSGifPresetHigh: return (GSPresetValues){ 640, 0.033, 5, 1 };
         case GSGifPresetBalanced: break;
     }
     return (GSPresetValues){ 480, 0.06, 7, 0 };

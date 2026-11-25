@@ -3,9 +3,9 @@
 NS_ASSUME_NONNULL_BEGIN
 
 typedef NS_ENUM(NSInteger, GSGifPreset) {
-    GSGifPresetSmall = 0,       // 320 px, 12 frames a second
-    GSGifPresetBalanced = 1,    // 480 px, 16 frames a second
-    GSGifPresetHigh = 2,        // 640 px, 20 frames a second, smoothed gradients
+    GSGifPresetSmall = 0,       // 320 px, up to 12 frames a second
+    GSGifPresetBalanced = 1,    // 480 px, up to 16 frames a second (every second frame of most videos)
+    GSGifPresetHigh = 2,        // 640 px, every frame up to 30 a second, smoothed gradients
 };
 
 extern const double GSGifMaxSeconds;        // a GIF covers at most this much of a video

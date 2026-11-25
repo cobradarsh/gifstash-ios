@@ -331,7 +331,7 @@ static void TestMaker(NSURL *folder) {
     struct { GSGifPreset preset; int width, height, minFrames, maxFrames; } expect[] = {
         { GSGifPresetSmall, 320, 240, 28, 32 },         // every 0.08 s wanted, frames come every 0.033 s: each third one
         { GSGifPresetBalanced, 480, 360, 43, 47 },      // each second one
-        { GSGifPresetHigh, 640, 480, 43, 47 },
+        { GSGifPresetHigh, 640, 480, 88, 92 },             // every frame
     };
     for (int i = 0; i < 3; i++) {
         NSString *name = GSGifPresetName(expect[i].preset);
