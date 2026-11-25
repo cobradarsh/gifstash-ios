@@ -18,6 +18,23 @@ any chat. Built for an iPhone 14 Pro Max on iOS 16.5 and installed with TrollSto
 - Each clip is kept twice: the GIF (what chats want) and the original MP4 (smaller and sharper, for apps that
   take video). "Remake GIF" in a clip's More menu makes the GIF again at another quality.
 
+## GIF Stash Button (the tweak, `Tweak/`)
+
+For a jailbroken iPhone (RootHide, ElleKit): a button in the bar under the system keyboard, left of the dictation
+key (or of the button another tweak put there). Tap it and the saved clips take the keyboard's place, playing;
+tap one and its GIF is put on the clipboard and pasted into the message being written. The button shows GIF
+Stash's icon as the active SnowBoard theme draws it, and the picker takes its accent colour from that icon.
+
+- A chat app cannot read GIF Stash's container, so the tweak's SpringBoard half keeps a copy of the library in
+  `<jailbreak root>/var/mobile/Library/GifStash` made of hard links (no extra space), brought up to date whenever
+  the app or its extensions change the library and whenever a picker opens. The themed icon is copied there too.
+- The app half hooks `-[UIKeyboardDockView layoutSubviews]` (plain runtime calls, no hooking library) and does
+  nothing else until the button is pressed. iOS keeps two keyboard bars (a stand-in and the real one); both get
+  the button, the visible one is used.
+- Built by `.github/workflows/tweak.yml` (Theos, roothide scheme, arm64 + arm64e); package `com.adarsh.gifstashkey`.
+- Test hooks: with the file `diag` in that folder, numbered lines in `cmd.txt` (`field`, `state`, `tap`, `pick 0`,
+  `shot <name>`, ...; see `Tweak/GifStashKeyDebug.m`) are run by the app in front, which logs to its own `tmp`.
+
 ## How a post is read
 
 The public feed that X's own embed widget uses (`cdn.syndication.twimg.com/tweet-result`): no account, no keys.
