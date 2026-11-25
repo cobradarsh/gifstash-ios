@@ -24,6 +24,8 @@ void GifStashKeyDebugStart(void);
 BOOL GifStashKeyDebugOn(void);
 /// Written only while the test marker is there (an app's own tmp folder).
 void GifStashKeyLog(NSString *format, ...) NS_FORMAT_FUNCTION(1, 2);
+/// While testing: notes what is about to receive a paste ("before") and what it did with it ("after").
+void GifStashKeyDebugPaste(NSString *stage);
 
 /// GIF Stash's icon as the home screen shows it, and a colour taken from it for the picker's accents.
 UIImage *GifStashKeyIcon(void);

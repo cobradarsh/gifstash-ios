@@ -1,6 +1,6 @@
 Package: com.adarsh.gifstashkey
 Name: GIF Stash Button
-Version: 1.0.2
+Version: 1.0.3
 Architecture: iphoneos-arm64e
 Description: A GIF Stash button in the bar under the keyboard. Tap it to see the clips saved in GIF Stash, playing, in place of the keyboard; tap one and it is pasted into the message you are writing. The button shows GIF Stash's icon as your SnowBoard theme draws it. Needs the GIF Stash app.
 Maintainer: Adarsh

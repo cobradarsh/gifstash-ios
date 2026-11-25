@@ -13,7 +13,10 @@
 //   pick <n>      choose clip number n in the picker
 //   shot <name>   a picture of every window, keyboard included, as gifstashkey-<name>.png in tmp
 #import "GifStashKey.h"
+#import <objc/runtime.h>
 #include <unistd.h>
+
+static NSString *const kVersion = @"1.0.3";
 
 static BOOL gOn;
 static NSInteger gLastCommand = -1;
@@ -191,11 +194,125 @@ static void Run(NSString *command, NSString *argument) {
     }
 }
 
+#pragma mark - What a paste meets
+
+static __weak UIResponder *gFirstResponder;
+static NSString *gTextBefore;
+
+@interface UIResponder (GifStashKeyDebug)
+- (void)gifStashKeyNoteFirstResponder:(id)sender;
+@end
+
+@implementation UIResponder (GifStashKeyDebug)
+- (void)gifStashKeyNoteFirstResponder:(id)sender {
+    gFirstResponder = self;
+}
+@end
+
+/// The class, going up from `object`'s, that has its own version of `selector`.
+static NSString *Implementer(id object, SEL selector) {
+    for (Class each = [object class]; each; each = class_getSuperclass(each)) {
+        unsigned int count = 0;
+        Method *methods = class_copyMethodList(each, &count);
+        BOOL has = NO;
+        for (unsigned int i = 0; i < count && !has; i++) has = method_getName(methods[i]) == selector;
+        free(methods);
+        if (has) return NSStringFromClass(each);
+    }
+    return @"nobody";
+}
+
+static NSString *TextOf(UIResponder *responder) {
+    if ([responder isKindOfClass:UITextView.class]) return ((UITextView *)responder).text ?: @"";
+    if ([responder isKindOfClass:UITextField.class]) return ((UITextField *)responder).text ?: @"";
+    return nil;
+}
+
+void GifStashKeyDebugPaste(NSString *stage) {
+    if (!gOn) return;
+    gFirstResponder = nil;
+    [UIApplication.sharedApplication sendAction:@selector(gifStashKeyNoteFirstResponder:) to:nil from:nil forEvent:nil];
+    UIResponder *first = gFirstResponder;
+    NSString *text = TextOf(first);
+    if ([stage isEqualToString:@"before"]) {
+        gTextBefore = text;
+        NSMutableArray<NSString *> *classes = [NSMutableArray new];
+        for (Class each = first.class; each && classes.count < 6; each = class_getSuperclass(each)) [classes addObject:NSStringFromClass(each)];
+        NSMutableArray<NSString *> *chain = [NSMutableArray new];
+        for (UIResponder *each = first.nextResponder; each && chain.count < 8; each = each.nextResponder) {
+            [chain addObject:[NSString stringWithFormat:@"%@%@", NSStringFromClass(each.class),
+                              [Implementer(each, @selector(paste:)) isEqualToString:@"nobody"] ? @"" : @"(has paste:)"]];
+        }
+        GifStashKeyLog(@"paste before: first responder %@", first ? [classes componentsJoinedByString:@" : "] : @"NONE");
+        GifStashKeyLog(@"paste before: paste: comes from %@, pasteItemProviders: from %@, canPerformAction(paste)=%d, accepts %@",
+                       Implementer(first, @selector(paste:)), Implementer(first, @selector(pasteItemProviders:)),
+                       [first canPerformAction:@selector(paste:) withSender:nil],
+                       [first respondsToSelector:@selector(pasteConfiguration)] ? first.pasteConfiguration.acceptableTypeIdentifiers : nil);
+        GifStashKeyLog(@"paste before: then %@", [chain componentsJoinedByString:@" > "]);
+        if ([first isKindOfClass:UITextView.class]) {
+            UITextView *view = (UITextView *)first;
+            GifStashKeyLog(@"paste before: text view editable=%d, attributes allowed=%d, delegate %@, %lu characters", view.editable,
+                           view.allowsEditingTextAttributes, NSStringFromClass([view.delegate class]), (unsigned long)text.length);
+        }
+        UIPasteboard *board = UIPasteboard.generalPasteboard;
+        NSMutableArray *providers = [NSMutableArray new];
+        for (NSItemProvider *provider in board.itemProviders) [providers addObject:provider.registeredTypeIdentifiers];
+        GifStashKeyLog(@"paste before: clipboard %ld items, types %@, images=%d strings=%d urls=%d, providers %@", (long)board.numberOfItems,
+                       board.pasteboardTypes, board.hasImages, board.hasStrings, board.hasURLs, providers);
+    } else {
+        // Only what the paste added is written down, never what was already in the box.
+        NSString *before = gTextBefore ?: @"";
+        NSString *added = @"";
+        if (text && text.length > before.length) {
+            NSUInteger head = 0;
+            while (head < before.length && [text characterAtIndex:head] == [before characterAtIndex:head]) head++;
+            added = [text substringWithRange:NSMakeRange(head, MIN((NSUInteger)80, text.length - before.length))];
+        }
+        NSMutableArray<NSString *> *codes = [NSMutableArray new];
+        for (NSUInteger i = 0; i < added.length && i < 12; i++) [codes addObject:[NSString stringWithFormat:@"%04x", [added characterAtIndex:i]]];
+        UIViewController *top = nil;
+        for (UIWindow *window in AllWindows()) {
+            if (!window.isKeyWindow) continue;
+            top = window.rootViewController;
+            while (top.presentedViewController) top = top.presentedViewController;
+        }
+        GifStashKeyLog(@"paste after: first responder %@, text went from %lu to %lu characters, added '%@' (codes %@), front screen %@",
+                       NSStringFromClass(first.class), (unsigned long)before.length, (unsigned long)text.length, added,
+                       [codes componentsJoinedByString:@" "], NSStringFromClass(top.class));
+        gTextBefore = nil;
+    }
+}
+
+#pragma mark - Touches that reach the keys
+
+static IMP gKeyboardTouchesBegan;
+
+static void KeyboardTouchesBegan(UIView *self, SEL _cmd, NSSet<UITouch *> *touches, UIEvent *event) {
+    UITouch *touch = touches.anyObject;
+    NSMutableArray<NSString *> *chain = [NSMutableArray new];
+    for (UIView *each = touch.view; each && chain.count < 4; each = each.superview) [chain addObject:NSStringFromClass(each.class)];
+    GifStashKeyLog(@"touch: the KEYBOARD got a touch at %@ (picker open=%d); it was aimed at %@ in %@", NSStringFromCGPoint([touch locationInView:nil]),
+                   GifStashKeyPanel.current != nil, [chain componentsJoinedByString:@" < "], NSStringFromClass(touch.window.class));
+    if (gKeyboardTouchesBegan) ((void (*)(id, SEL, id, id))gKeyboardTouchesBegan)(self, _cmd, touches, event);
+}
+
+static void WatchKeyboardTouches(void) {
+    Class layout = NSClassFromString(@"UIKeyboardLayout");
+    SEL selector = @selector(touchesBegan:withEvent:);
+    Method method = layout ? class_getInstanceMethod(layout, selector) : NULL;
+    if (!method) return;
+    gKeyboardTouchesBegan = method_getImplementation(method);
+    if (!class_addMethod(layout, selector, (IMP)KeyboardTouchesBegan, method_getTypeEncoding(method))) {
+        method_setImplementation(method, (IMP)KeyboardTouchesBegan);
+    }
+}
+
 void GifStashKeyDebugStart(void) {
     NSString *mirror = GifStashKeyMirror();
     gOn = [NSFileManager.defaultManager fileExistsAtPath:[mirror stringByAppendingPathComponent:@"diag"]];
     if (!gOn) return;
-    GifStashKeyLog(@"loaded into %@ (pid %d)", NSBundle.mainBundle.bundleIdentifier, (int)getpid());
+    GifStashKeyLog(@"loaded into %@ (pid %d), GIF Stash Button %@", NSBundle.mainBundle.bundleIdentifier, (int)getpid(), kVersion);
+    WatchKeyboardTouches();
     NSString *commands = [mirror stringByAppendingPathComponent:@"cmd.txt"];
     dispatch_async(dispatch_get_main_queue(), ^{
         [NSTimer scheduledTimerWithTimeInterval:0.3 repeats:YES block:^(NSTimer *timer) {

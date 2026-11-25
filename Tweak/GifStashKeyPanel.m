@@ -458,7 +458,16 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
     [(GifStashKeyTile *)cell play:NO];
 }
 
+- (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event {
+    UIView *view = [super hitTest:point withEvent:event];
+    if (event && GifStashKeyDebugOn()) {
+        GifStashKeyLog(@"touch: the picker was asked about %@ and answered %@", NSStringFromCGPoint(point), NSStringFromClass(view.class));
+    }
+    return view;
+}
+
 - (void)collectionView:(UICollectionView *)collectionView didSelectItemAtIndexPath:(NSIndexPath *)indexPath {
+    GifStashKeyLog(@"touch: tile %ld chosen", (long)indexPath.item);
     [collectionView deselectItemAtIndexPath:indexPath animated:NO];
     [self pickIndex:(NSUInteger)indexPath.item];
 }
@@ -511,7 +520,11 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
                 GifStashKeyLog(@"pick %@: file missing", clip.clipID);
                 return;
             }
+            GifStashKeyDebugPaste(@"before");
             const BOOL pasted = [UIApplication.sharedApplication sendAction:@selector(paste:) to:nil from:nil forEvent:nil];
+            dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(0.8 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{
+                GifStashKeyDebugPaste(@"after");
+            });
             if (!pasted) [GifStashKeyPanel toast:@"Copied. Hold the message box and tap Paste."];
             GifStashKeyLog(@"pick %@: %lu bytes on the clipboard, paste taken=%d", clip.clipID, (unsigned long)bytes, pasted);
         });
