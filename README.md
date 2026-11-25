@@ -31,6 +31,9 @@ Stash's icon as the active SnowBoard theme draws it, and the picker takes its ac
 - The app half hooks `-[UIKeyboardDockView layoutSubviews]` (plain runtime calls, no hooking library) and does
   nothing else until the button is pressed. iOS keeps two keyboard bars (a stand-in and the real one); both get
   the button, the visible one is used.
+- The picker is a direct subview of the keyboard's window, not of `UIInputSetHostView`: that view offers every
+  touch to the keyboard first, so anything laid over the keys from inside it never gets a tap (1.0.1 did this,
+  and taps on a clip typed letters). While the picker is open the keyboard's content takes no touches.
 - Built by `.github/workflows/tweak.yml` (Theos, roothide scheme, arm64 + arm64e); package `com.adarsh.gifstashkey`.
 - Test hooks: with the file `diag` in that folder, numbered lines in `cmd.txt` (`field`, `state`, `tap`, `pick 0`,
   `shot <name>`, ...; see `Tweak/GifStashKeyDebug.m`) are run by the app in front, which logs to its own `tmp`.
