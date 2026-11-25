@@ -212,6 +212,15 @@ static BOOL GSCanWrite(NSURL *folder) {
     [_defaults setInteger:MAX(0, MIN(2, preset)) forKey:@"preset"];
 }
 
+- (BOOL)keyboardAnimates {
+    id stored = [_defaults objectForKey:@"keyboardAnimates"];
+    return stored ? [stored boolValue] : YES;
+}
+
+- (void)setKeyboardAnimates:(BOOL)animates {
+    [_defaults setBool:animates forKey:@"keyboardAnimates"];
+}
+
 - (void)announceChange {
     CFNotificationCenterPostNotification(CFNotificationCenterGetDarwinNotifyCenter(),
                                          (__bridge CFStringRef)GSChangedDarwinName, NULL, NULL, YES);

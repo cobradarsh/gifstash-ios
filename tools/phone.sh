@@ -8,6 +8,7 @@
 #   phone.sh diag <command?query>     run a test hook, e.g. `diag state` (the phone must be unlocked)
 #   phone.sh log [n]                  last n lines of the hook log (default 40)
 #   phone.sh snap <name>              picture of the app window, copied to ./shots/<name>.png
+#   phone.sh kbdiag on | off | log    the keyboard's own notes on what it shows and the memory it uses
 set -u
 SSH="${GIFSTASH_SSH:-ssh -o BatchMode=yes -o ConnectTimeout=12 -o ServerAliveInterval=15 ${GIFSTASH_PHONE:-iphone-root}}"
 BID=com.cobradarsh.gifstash
@@ -53,5 +54,14 @@ case "${1:-}" in
         $SSH "cat '$C/Library/Caches/gs-snap-$2.png'" > "$OUT/$2.png" && $SSH "rm -f '$C/Library/Caches/gs-snap-$2.png'"
         ls -la "$OUT/$2.png"
         ;;
-    *) sed -n '2,10p' "$0"; exit 2 ;;
+    kbdiag)
+        # The keyboard notes its memory use in the shared container while the file kb-diag is there.
+        G="$(group)"; [ -n "$G" ] || { echo "no shared container yet"; exit 1; }
+        case "${2:-log}" in
+            on) $SSH "touch '$G/kb-diag' && chown mobile:mobile '$G/kb-diag' && ls '$G'" ;;
+            off) $SSH "rm -f '$G/kb-diag' '$G/kb-diag.log'; ls '$G'" ;;
+            *) $SSH "cat '$G/kb-diag.log' 2>/dev/null || echo 'nothing noted yet'" ;;
+        esac
+        ;;
+    *) sed -n '2,11p' "$0"; exit 2 ;;
 esac

@@ -125,18 +125,38 @@ static NSString *const kHowTo =
     UIMenu *qualityMenu = [UIMenu menuWithTitle:@"GIF quality for new clips" image:nil identifier:nil
                                         options:UIMenuOptionsDisplayInline children:quality];
     __weak typeof(self) weakSelf = self;
+    UIAction *keyboard = [UIAction actionWithTitle:@"Set up the GIF keyboard" image:[UIImage systemImageNamed:@"keyboard"]
+                                        identifier:nil handler:^(UIAction *action) { [weakSelf showKeyboardSetup]; }];
+    UIAction *plays = [UIAction actionWithTitle:@"Keyboard plays clips" image:nil identifier:nil handler:^(UIAction *action) {
+        GSStore.shared.keyboardAnimates = !GSStore.shared.keyboardAnimates;
+    }];
+    plays.state = store.keyboardAnimates ? UIMenuElementStateOn : UIMenuElementStateOff;
+    UIMenu *keyboardMenu = [UIMenu menuWithTitle:@"" image:nil identifier:nil options:UIMenuOptionsDisplayInline children:@[keyboard, plays]];
     UIAction *how = [UIAction actionWithTitle:@"How to save a GIF" image:[UIImage systemImageNamed:@"questionmark.circle"]
                                    identifier:nil handler:^(UIAction *action) { [weakSelf showHowTo]; }];
     NSString *size = [NSString stringWithFormat:@"%lu clips  ·  %@", (unsigned long)_allItems.count, GSByteString(store.totalBytes)];
     UIAction *storage = [UIAction actionWithTitle:size image:[UIImage systemImageNamed:@"internaldrive"] identifier:nil
                                           handler:^(UIAction *action) {}];
     storage.attributes = UIMenuElementAttributesDisabled;
-    return @[qualityMenu, how, storage];
+    return @[qualityMenu, keyboardMenu, how, storage];
 }
 
 - (void)showHowTo {
     UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"Saving a GIF" message:kHowTo preferredStyle:UIAlertControllerStyleAlert];
     [alert addAction:[UIAlertAction actionWithTitle:@"OK" style:UIAlertActionStyleDefault handler:nil]];
+    [self presentViewController:alert animated:YES completion:nil];
+}
+
+- (void)showKeyboardSetup {
+    NSString *steps = @"1. Tap Open Settings, then Keyboards.\n2. Switch on GIF Stash, then Allow Full Access.\n"
+                      @"3. In any chat, hold the globe key and choose GIF Stash.\n4. Tap a GIF, tap the message box, tap Paste.\n\n"
+                      @"Full Access is what lets the keyboard read your library and put a GIF on the clipboard. "
+                      @"It has no letter keys and does not use the network.";
+    UIAlertController *alert = [UIAlertController alertControllerWithTitle:@"GIF keyboard" message:steps preferredStyle:UIAlertControllerStyleAlert];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Not now" style:UIAlertActionStyleCancel handler:nil]];
+    [alert addAction:[UIAlertAction actionWithTitle:@"Open Settings" style:UIAlertActionStyleDefault handler:^(UIAlertAction *action) {
+        [UIApplication.sharedApplication openURL:[NSURL URLWithString:UIApplicationOpenSettingsURLString] options:@{} completionHandler:nil];
+    }]];
     [self presentViewController:alert animated:YES completion:nil];
 }
 

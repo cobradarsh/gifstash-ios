@@ -97,6 +97,8 @@ void GSDiagHandle(NSURL *url) {
                               @"top": NSStringFromClass(GSDiagTop().class),
                               @"screen": NSStringFromCGRect(screen.bounds), @"scale": @(screen.scale),
                               @"maxFPS": @(screen.maximumFramesPerSecond),
+                              @"footprintMB": @(GSFootprintMB()), @"availableMB": @(GSAvailableMB()),
+                              @"keyboardAnimates": @(store.keyboardAnimates),
                               @"version": [NSBundle.mainBundle objectForInfoDictionaryKey:@"CFBundleShortVersionString"] ?: @""});
     } else if ([command isEqualToString:@"import"]) {
         const CFAbsoluteTime started = CFAbsoluteTimeGetCurrent();

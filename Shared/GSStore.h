@@ -54,6 +54,7 @@ extern NSString *const GSStoreChangedNotification;     // in this process, on th
 
 /// Settings both the app and the extension read.
 @property (nonatomic) NSInteger preset;
+@property (nonatomic) BOOL keyboardAnimates;            // the keyboard plays its clips (default) or shows stills
 - (void)announceChange;
 @end
 

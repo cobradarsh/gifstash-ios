@@ -29,12 +29,14 @@ jobs:
       - name: Verify
         run: |
           APP=build/Payload/GifStash.app
-          xcrun lipo -info "$APP/GifStash" "$APP/PlugIns/Share.appex/Share"
+          xcrun lipo -info "$APP/GifStash" "$APP/PlugIns/Share.appex/Share" "$APP/PlugIns/Keyboard.appex/Keyboard"
           xcrun otool -l "$APP/GifStash" | grep -A5 LC_BUILD_VERSION | head -6
           plutil -p "$APP/Info.plist" | grep -E 'CFBundleIdentifier|CFBundleIcons|AppIcon|UILaunchScreen|MinimumOSVersion|CFBundleShortVersionString' || true
           plutil -p "$APP/PlugIns/Share.appex/Info.plist"
           codesign -d --entitlements - --xml "$APP/GifStash" | plutil -p - || true
           codesign -d --entitlements - --xml "$APP/PlugIns/Share.appex/Share" | plutil -p - || true
+          plutil -p "$APP/PlugIns/Keyboard.appex/Info.plist"
+          codesign -d --entitlements - --xml "$APP/PlugIns/Keyboard.appex/Keyboard" | plutil -p - || true
           codesign --verify --verbose "$APP"
           unzip -l build/GifStash.ipa
           shasum -a 256 build/GifStash.ipa

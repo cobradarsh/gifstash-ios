@@ -11,6 +11,10 @@ any chat. Built for an iPhone 14 Pro Max on iOS 16.5 and installed with TrollSto
   Search by account, the post's words, or a name you gave the clip. Star favourites.
 - **Send**: tap a clip for Share GIF / Copy GIF / Share as Video, or hold it for the same menu. A clip can also be
   dragged out of the app.
+- **Keyboard**: the saved clips inside any chat. Switch on GIF Stash under Settings › GIF Stash › Keyboards and
+  allow Full Access (that is what lets a keyboard read the shared library and write to the clipboard; it has no
+  letter keys and makes no network calls). Tap a clip, tap the message box, Paste. "Keyboard plays clips" in the
+  app's menu turns the moving previews into stills.
 - Each clip is kept twice: the GIF (what chats want) and the original MP4 (smaller and sharper, for apps that
   take video). "Remake GIF" in a clip's More menu makes the GIF again at another quality.
 
