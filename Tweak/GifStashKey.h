@@ -51,6 +51,8 @@ UIButton *_Nullable GifStashKeyButtonInDock(UIView *dock);
 + (void)toggleFromDock:(UIView *)dock;
 + (void)close;
 - (NSUInteger)clipCount;
+/// Where the first clip's tile is, in its window's coordinates (zero when there is none).
+- (CGPoint)centreOfFirstTile;
 /// Puts clip number `index` on the clipboard and pastes it into the text being edited.
 - (BOOL)pickIndex:(NSUInteger)index;
 @end

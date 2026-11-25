@@ -8,6 +8,7 @@
 //   fieldstate    what the text box holds (a pasted GIF shows as an attachment)
 //   endfield      take the text box away
 //   tap           press the button, as a finger would
+//   hit           which view a touch on the first tile, and on the picker's empty part, would reach
 //   open | close  the picker
 //   pick <n>      choose clip number n in the picker
 //   shot <name>   a picture of every window, keyboard included, as gifstashkey-<name>.png in tmp
@@ -148,6 +149,28 @@ static void Run(NSString *command, NSString *argument) {
         [button sendActionsForControlEvents:UIControlEventTouchUpInside];
         GifStashKeyLog(@"tap: button=%d, panel=%d in %@", button != nil, GifStashKeyPanel.current != nil,
                        NSStringFromClass(GifStashKeyPanel.current.window.class));
+    } else if ([command isEqualToString:@"hit"]) {
+        // Where a finger on the first tile, and one on the empty part of the picker, would land: the windows are
+        // asked from the front one back, as the system does.
+        GifStashKeyPanel *panel = GifStashKeyPanel.current;
+        const CGPoint tile = [panel centreOfFirstTile];
+        const CGRect area = [panel convertRect:panel.bounds toView:nil];
+        NSArray<NSValue *> *points = @[[NSValue valueWithCGPoint:tile],
+                                       [NSValue valueWithCGPoint:CGPointMake(CGRectGetMaxX(area) - 30, CGRectGetMaxY(area) - 60)]];
+        for (NSValue *value in points) {
+            const CGPoint point = value.CGPointValue;
+            NSString *found = @"nothing";
+            for (UIWindow *window in AllWindows().reverseObjectEnumerator) {
+                UIView *view = [window hitTest:[window convertPoint:point fromWindow:nil] withEvent:nil];
+                if (!view) continue;
+                NSMutableArray<NSString *> *chain = [NSMutableArray new];
+                for (UIView *each = view; each && chain.count < 5; each = each.superview) [chain addObject:NSStringFromClass(each.class)];
+                found = [NSString stringWithFormat:@"%@ in %@, inside the picker=%d", [chain componentsJoinedByString:@" < "],
+                         NSStringFromClass(window.class), panel != nil && [view isDescendantOfView:panel]];
+                break;
+            }
+            GifStashKeyLog(@"hit %@: %@", NSStringFromCGPoint(point), found);
+        }
     } else if ([command isEqualToString:@"open"]) {
         UIView *dock = GifStashKeyCurrentDock();
         if (dock && !GifStashKeyPanel.current) [GifStashKeyPanel toggleFromDock:dock];

@@ -197,6 +197,7 @@ static __weak GifStashKeyPanel *gPanel;
 
 @interface GifStashKeyPanel () <UICollectionViewDataSource, UICollectionViewDelegateFlowLayout>
 - (void)reload;
+- (void)giveKeyboardBack;
 @end
 
 @implementation GifStashKeyPanel {
@@ -208,6 +209,7 @@ static __weak GifStashKeyPanel *gPanel;
     UILabel *_message;
     NSArray<GifStashKeyClip *> *_clips;
     CGFloat _bottomInset;
+    __weak UIView *_keyboard;       // the keyboard's own content, which takes no touches while the picker is up
 }
 
 static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotificationName name, const void *object,
@@ -223,6 +225,7 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
     GifStashKeyPanel *panel = gPanel;
     if (!panel) return;
     gPanel = nil;
+    [panel giveKeyboardBack];
     for (GifStashKeyTile *tile in panel->_collection.visibleCells) [tile play:NO];
     [UIView animateWithDuration:0.16 animations:^{ panel.alpha = 0; } completion:^(BOOL finished) { [panel removeFromSuperview]; }];
 }
@@ -232,26 +235,36 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
         [self close];
         return;
     }
-    // The view that holds the whole keyboard, bar included.
+    UIWindow *window = dock.window;
+    if (!window) return;
+    // The view that holds the whole keyboard, bar included, gives the picker's place...
     UIView *host = nil;
     for (UIView *view = dock.superview; view; view = view.superview) {
         if ([NSStringFromClass(view.class) containsString:@"InputSetHostView"]) { host = view; break; }
     }
     CGRect frame;
     if (host) {
-        frame = host.bounds;
+        frame = [window convertRect:host.bounds fromView:host];
     } else {
-        // No such view (another iOS): cover the window from the top of the keyboard down, by the bar's place in it.
-        host = dock.window;
-        if (!host) return;
-        const CGRect bar = [host convertRect:dock.bounds fromView:dock];
-        const CGFloat top = MAX(0, CGRectGetMaxY(bar) - 336);
-        frame = CGRectMake(0, top, host.bounds.size.width, host.bounds.size.height - top);
+        // No such view (another iOS): from the top of the keyboard down, going by where the bar is.
+        const CGRect bar = [window convertRect:dock.bounds fromView:dock];
+        const CGFloat top = MAX(0, CGRectGetMaxY(bar) - 346);
+        frame = CGRectMake(0, top, window.bounds.size.width, window.bounds.size.height - top);
     }
+    // ...but the picker must not go inside it: that view (UIInputSetHostView) offers every touch to the keyboard
+    // first, so a view laid over the keys from inside it never gets a tap, and the keys under it type. The picker
+    // goes straight into the keyboard's window, above all of that, and the keyboard's content is told to take no
+    // touches until the picker is closed.
+    UIView *content = dock;
+    while (content.superview && content.superview != window) content = content.superview;
     GifStashKeyPanel *panel = [[GifStashKeyPanel alloc] initWithFrame:frame];
-    panel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleHeight;
-    panel->_bottomInset = MAX(host.safeAreaInsets.bottom, dock.window.safeAreaInsets.bottom);
-    [host addSubview:panel];
+    panel.autoresizingMask = UIViewAutoresizingFlexibleWidth | UIViewAutoresizingFlexibleTopMargin;
+    panel->_bottomInset = window.safeAreaInsets.bottom;
+    if (content != window && content.userInteractionEnabled) {
+        panel->_keyboard = content;
+        content.userInteractionEnabled = NO;
+    }
+    [window addSubview:panel];
     gPanel = panel;
     panel.alpha = 0;
     [UIView animateWithDuration:0.16 animations:^{ panel.alpha = 1; }];
@@ -332,7 +345,19 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
     if (gPanel == self) [GifStashKeyPanel close];
 }
 
+- (void)giveKeyboardBack {
+    _keyboard.userInteractionEnabled = YES;
+    _keyboard = nil;
+}
+
+- (void)willMoveToWindow:(UIWindow *)newWindow {
+    [super willMoveToWindow:newWindow];
+    // Whatever takes the picker off screen, the keyboard works again.
+    if (!newWindow) [self giveKeyboardBack];
+}
+
 - (void)dealloc {
+    _keyboard.userInteractionEnabled = YES;
     [NSNotificationCenter.defaultCenter removeObserver:self];
     CFNotificationCenterRemoveEveryObserver(CFNotificationCenterGetDarwinNotifyCenter(), (__bridge const void *)self);
 }
@@ -385,6 +410,11 @@ static void PanelSynced(CFNotificationCenterRef center, void *observer, CFNotifi
 
 - (NSUInteger)clipCount {
     return _clips.count;
+}
+
+- (CGPoint)centreOfFirstTile {
+    UICollectionViewCell *tile = [_collection cellForItemAtIndexPath:[NSIndexPath indexPathForItem:0 inSection:0]];
+    return tile ? [tile convertPoint:CGPointMake(CGRectGetMidX(tile.bounds), CGRectGetMidY(tile.bounds)) toView:nil] : CGPointZero;
 }
 
 - (void)filterChanged {
