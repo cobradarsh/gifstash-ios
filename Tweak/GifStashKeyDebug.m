@@ -288,6 +288,11 @@ void GifStashKeyDebugPaste(NSString *stage) {
 static IMP gKeyboardTouchesBegan;
 
 static void KeyboardTouchesBegan(UIView *self, SEL _cmd, NSSet<UITouch *> *touches, UIEvent *event) {
+    // Only while the picker is up: where someone types at other times is nobody's business, test or not.
+    if (!GifStashKeyPanel.current) {
+        if (gKeyboardTouchesBegan) ((void (*)(id, SEL, id, id))gKeyboardTouchesBegan)(self, _cmd, touches, event);
+        return;
+    }
     UITouch *touch = touches.anyObject;
     NSMutableArray<NSString *> *chain = [NSMutableArray new];
     for (UIView *each = touch.view; each && chain.count < 4; each = each.superview) [chain addObject:NSStringFromClass(each.class)];
