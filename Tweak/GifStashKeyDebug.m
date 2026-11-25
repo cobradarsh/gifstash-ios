@@ -77,8 +77,11 @@ static void State(void) {
         for (UIView *view = each; view; view = view.superview) {
             [chain addObject:[NSString stringWithFormat:@"%@ %@", NSStringFromClass(view.class), NSStringFromCGRect(view.frame)]];
         }
-        GifStashKeyLog(@"state: bar%@ (window level %.0f, hidden=%d, button=%d): %@", each == dock ? @" IN FRONT" : @"",
-                       each.window.windowLevel, each.window.hidden, GifStashKeyButtonInDock(each) != nil, [chain componentsJoinedByString:@" < "]);
+        UIView *content = each;
+        while (content.superview && content.superview != each.window) content = content.superview;
+        GifStashKeyLog(@"state: bar%@ (window level %.0f, hidden=%d, button=%d, keyboard takes touches=%d): %@", each == dock ? @" IN FRONT" : @"",
+                       each.window.windowLevel, each.window.hidden, GifStashKeyButtonInDock(each) != nil, content.userInteractionEnabled,
+                       [chain componentsJoinedByString:@" < "]);
     }
     for (UIView *item in dock.subviews) {
         NSString *picture = @"";
