@@ -1,0 +1,7 @@
+build/
+build-tests/
+build-sim/
+out/
+.DS_Store
+__pycache__/
+shots/
