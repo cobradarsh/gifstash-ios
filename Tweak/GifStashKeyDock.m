@@ -8,7 +8,7 @@ static const CGFloat kSide = 30;            // points; the size other tweaks' ti
 static const CGFloat kStep = 58;            // centre to centre, from the item on the right
 static char kButtonKey;
 static IMP gOriginalLayout;
-static __weak UIView *gDock;
+static NSHashTable<UIView *> *gDocks;      // every keyboard bar seen and still alive
 static UIImage *gIcon;
 static UIColor *gAccent;
 static NSDate *gIconDate;
@@ -100,8 +100,20 @@ UIColor *GifStashKeyAccent(void) {
 }
 @end
 
+NSArray<UIView *> *GifStashKeyDocks(void) {
+    return gDocks.allObjects ?: @[];
+}
+
 UIView *GifStashKeyCurrentDock(void) {
-    return gDock;
+    // iOS keeps more than one keyboard bar (a stand-in in the text effects window, the real one in the keyboard's
+    // own window above it): the one in front is the one on screen.
+    UIView *front = nil;
+    for (UIView *dock in GifStashKeyDocks()) {
+        UIWindow *window = dock.window;
+        if (!window || window.hidden || dock.hidden) continue;
+        if (!front || window.windowLevel > front.window.windowLevel) front = dock;
+    }
+    return front;
 }
 
 UIButton *GifStashKeyButtonInDock(UIView *dock) {
@@ -122,7 +134,8 @@ static CGRect GlyphRect(UIView *item, UIView *dock) {
 static void PlaceButton(UIView *dock) {
     const CGRect bounds = dock.bounds;
     if (bounds.size.width < 200 || bounds.size.height < 20) return;
-    gDock = dock;
+    if (!gDocks) gDocks = [NSHashTable weakObjectsHashTable];
+    [gDocks addObject:dock];
 
     UIButton *button = objc_getAssociatedObject(dock, &kButtonKey);
     if (!button) {

@@ -29,8 +29,9 @@ void GifStashKeyLog(NSString *format, ...) NS_FORMAT_FUNCTION(1, 2);
 UIImage *GifStashKeyIcon(void);
 UIColor *GifStashKeyAccent(void);
 
-/// The keyboard bar the button was last laid out in.
+/// The keyboard bar that is on screen (the frontmost of those seen), and all of them.
 UIView *_Nullable GifStashKeyCurrentDock(void);
+NSArray<UIView *> *GifStashKeyDocks(void);
 UIButton *_Nullable GifStashKeyButtonInDock(UIView *dock);
 
 @interface GifStashKeyClip : NSObject

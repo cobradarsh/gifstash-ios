@@ -7,6 +7,7 @@
 //   field         put a text box on screen and bring the keyboard up in it
 //   fieldstate    what the text box holds (a pasted GIF shows as an attachment)
 //   endfield      take the text box away
+//   tap           press the button, as a finger would
 //   open | close  the picker
 //   pick <n>      choose clip number n in the picker
 //   shot <name>   a picture of every window, keyboard included, as gifstashkey-<name>.png in tmp
@@ -70,11 +71,14 @@ static void State(void) {
         GifStashKeyLog(@"state: no keyboard bar seen yet");
         return;
     }
-    NSMutableArray<NSString *> *chain = [NSMutableArray new];
-    for (UIView *view = dock; view; view = view.superview) {
-        [chain addObject:[NSString stringWithFormat:@"%@ %@", NSStringFromClass(view.class), NSStringFromCGRect(view.frame)]];
+    for (UIView *each in GifStashKeyDocks()) {
+        NSMutableArray<NSString *> *chain = [NSMutableArray new];
+        for (UIView *view = each; view; view = view.superview) {
+            [chain addObject:[NSString stringWithFormat:@"%@ %@", NSStringFromClass(view.class), NSStringFromCGRect(view.frame)]];
+        }
+        GifStashKeyLog(@"state: bar%@ (window level %.0f, hidden=%d, button=%d): %@", each == dock ? @" IN FRONT" : @"",
+                       each.window.windowLevel, each.window.hidden, GifStashKeyButtonInDock(each) != nil, [chain componentsJoinedByString:@" < "]);
     }
-    GifStashKeyLog(@"state: bar chain: %@", [chain componentsJoinedByString:@" < "]);
     for (UIView *item in dock.subviews) {
         NSString *picture = @"";
         if ([item isKindOfClass:UIButton.class]) {
@@ -138,6 +142,12 @@ static void Run(NSString *command, NSString *argument) {
         [gField removeFromSuperview];
         gField = nil;
         GifStashKeyLog(@"endfield");
+    } else if ([command isEqualToString:@"tap"]) {
+        // What a finger on the button does.
+        UIButton *button = GifStashKeyCurrentDock() ? GifStashKeyButtonInDock(GifStashKeyCurrentDock()) : nil;
+        [button sendActionsForControlEvents:UIControlEventTouchUpInside];
+        GifStashKeyLog(@"tap: button=%d, panel=%d in %@", button != nil, GifStashKeyPanel.current != nil,
+                       NSStringFromClass(GifStashKeyPanel.current.window.class));
     } else if ([command isEqualToString:@"open"]) {
         UIView *dock = GifStashKeyCurrentDock();
         if (dock && !GifStashKeyPanel.current) [GifStashKeyPanel toggleFromDock:dock];
